@@ -16,6 +16,7 @@ const errorHandler = require('./middleware/error.middleware');
 const authRoutes = require('./routes/auth.routes');
 const projectRoutes = require('./routes/project.routes');
 const taskRoutes = require('./routes/task.routes');
+const uploadRoutes = require('./routes/upload.routes');
 
 /**
  * Express App Setup
@@ -62,6 +63,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/projects/:projectId/tasks', taskRoutes);
+app.use('/api/projects/:projectId/tasks/:taskId/attachments', uploadRoutes);
 
 // ─── 404 Handler ───────────────────────────────────────
 // Catches requests to undefined routes (app.use as catch-all works in Express 4 & 5)

@@ -1,7 +1,10 @@
 const Task = require('../models/Task');
+const User = require('../models/User');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
 const sendResponse = require('../utils/sendResponse');
+const { sendEmail } = require('../config/mailer');
+const { taskAssignedTemplate } = require('../utils/emailTemplates');
 
 /**
  * Populate options for task queries.
@@ -241,6 +244,29 @@ const assignTask = catchAsync(async (req, res) => {
   task.assignee = assignee || null;
   await task.save();
   await task.populate(TASK_POPULATE);
+
+  // ─── Fire-and-forget email notification ─────────────
+  // Send email to the assignee, but don't await it.
+  // If email fails, the API response still succeeds.
+  if (assignee) {
+    User.findById(assignee)
+      .select('name email')
+      .then((assigneeUser) => {
+        if (assigneeUser) {
+          const projectName = req.project?.name || 'a project';
+          const html = taskAssignedTemplate(
+            assigneeUser.name,
+            task.title,
+            projectName,
+            null // taskUrl — set this when frontend is deployed
+          );
+          sendEmail(assigneeUser.email, `Task Assigned: ${task.title}`, html);
+        }
+      })
+      .catch((err) => {
+        console.error('⚠️  Failed to send task assignment email:', err.message);
+      });
+  }
 
   sendResponse(res, 200, assignee ? 'Task assigned successfully' : 'Task unassigned successfully', { task });
 });

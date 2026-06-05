@@ -4,6 +4,8 @@ const Task = require('../models/Task');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
 const sendResponse = require('../utils/sendResponse');
+const { sendEmail } = require('../config/mailer');
+const { memberAddedTemplate } = require('../utils/emailTemplates');
 
 /**
  * Populate options reused across queries.
@@ -214,6 +216,18 @@ const addMember = catchAsync(async (req, res) => {
   project.members.push({ user: userId, role });
   await project.save();
   await project.populate([OWNER_POPULATE, MEMBER_POPULATE]);
+
+  // ─── Fire-and-forget email notification ─────────────
+  // Notify the new member via email, but don't await it.
+  // If email fails, the API response still succeeds.
+  const html = memberAddedTemplate(
+    targetUser.name,
+    project.name,
+    null // projectUrl — set this when frontend is deployed
+  );
+  sendEmail(targetUser.email, `You've been added to ${project.name}`, html).catch((err) => {
+    console.error('⚠️  Failed to send member added email:', err.message);
+  });
 
   sendResponse(res, 200, 'Member added successfully', { project });
 });

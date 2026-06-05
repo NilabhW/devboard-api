@@ -66,6 +66,43 @@ const taskSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    /**
+     * Attachments — files uploaded via Cloudinary
+     * ─────────────────────────────────────────────────
+     * Each attachment is a subdocument with its own _id,
+     * which makes it easy to find and remove specific files.
+     *
+     * Fields:
+     *   url          → Cloudinary CDN URL for the file
+     *   publicId     → Cloudinary public_id (needed for deletion)
+     *   originalName → The original filename the user uploaded
+     *   uploadedBy   → Ref to the User who uploaded it
+     *   uploadedAt   → When the file was uploaded
+     */
+    attachments: [
+      {
+        url: {
+          type: String,
+          required: true,
+        },
+        publicId: {
+          type: String,
+        },
+        originalName: {
+          type: String,
+          required: true,
+        },
+        uploadedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          required: true,
+        },
+        uploadedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,
